@@ -1,6 +1,11 @@
 ---
-- name: Test
-  hosts: test
+- name: monitoring setup 
+  hosts: monitoring
   become: true
   roles:
-    - grafana
+    - role: prometheus
+      tags:
+        - prometheus
+    - role: grafana
+      tags:
+        - grafana
