@@ -1,0 +1,9 @@
+---
+grafana_debian_package:
+  - apt-transport-https
+  - software-properties-common
+  - wget
+
+os_debian: "{{ ansible_os_family == 'Debian' }}"
+
+os_redhat: "{{ ansible_os_family == 'RedHat' }}"

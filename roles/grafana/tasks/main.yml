@@ -1,0 +1,74 @@
+---
+- name: Package Install 
+  apt:
+    name: "{{ grafana_debian_package}}"
+    state: present
+  when: os_debian
+
+- name: Ensure keyrings directory exists
+  file:
+    path: /etc/apt/keyrings
+    state: directory
+    mode: '0755'
+  when: os_debian
+- name: Download Grafana GPG key and dearmor
+  shell: |
+    wget -q -O - https://apt.grafana.com/gpg.key | gpg --dearmor | tee /etc/apt/keyrings/grafana.gpg > /dev/null
+  args:
+    creates: /etc/apt/keyrings/grafana.gpg
+  when: os_debian
+- name: Add Grafana stable repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com stable main"
+    filename: grafana
+    state: present
+  when: os_debian
+
+- name: Add Grafana beta repository
+  apt_repository:
+    repo: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com beta main"
+    filename: grafana
+    state: present
+  when: os_debian
+
+- name: Update apt cache
+  apt:
+   update_cache: yes
+  when: os_debian
+- name: Install grafana Debian
+  apt:
+    name: grafana
+    state: present
+- name: Start and enable Grafana service
+  service:
+    name: grafana-server
+    state: started
+    enabled: yes
+  when: os_debian
+
+- name: Copy Grafana repo file
+  ansible.builtin.copy:
+    src: grafana.repo
+    dest: /etc/yum.repos.d/grafana.repo
+    mode: '0644'
+  when: os_redhat
+
+- name: Import Grafana GPG key
+  ansible.builtin.rpm_key:
+    key: https://rpm.grafana.com/gpg.key
+    state: present
+  when: os_redhat
+
+- name: Install Grafana
+  ansible.builtin.dnf:
+    name: grafana
+    state: present
+  when: os_redhat
+
+- name: Start and enable Grafana service
+  ansible.builtin.service:
+    name: grafana-server
+    state: started
+    enabled: yes
+  when: os_redhat
+

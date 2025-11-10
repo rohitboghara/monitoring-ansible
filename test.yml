@@ -1,0 +1,78 @@
+---
+- name: Package Install 
+  apt:
+    name: "{{ grafana_debian_package}}"
+    state: present
+  when: os_debian
+- name: GPG Key
+  get_url:
+    url: https://apt.grafana.com/gpg.key
+    dest: /tmp/grafana.gpg
+    validate_certs: yes
+  when: os_debian
+- name: GPG key RedHat
+  get_url:
+    url: https://rpm.grafana.com/gpg.key
+    dest: /tmp/gpg.key
+  when: os_redhat
+- name: Import Grafana GPG key using rpm
+  command:
+    cmd: rpm --import /tmp/gpg.key
+    creates: /etc/pki/rpm-gpg/RPM-GPG-KEY-grafana
+  when: os_redhat
+- name: clean up the downloaded GPG key file
+  file:
+    path: /tmp/gpg.key
+    state: absent
+  when: os_redhat
+- name:  Dearmor the GPG key and save to /etc/apt/keyrings/grafana.gpg
+  command: gpg --dearmor /tmp/grafana.gpg
+  args:
+    creates: /etc/apt/keyrings/grafana.gpg
+  when: os_debian
+- name: Move the dearmored key to the correct location
+  command: mv /tmp/grafana.gpg /etc/apt/keyrings/grafana.gpg
+  when: os_debian
+
+- name: Add Grafana stable repository to sources.list
+  lineinfile:
+    path: /etc/apt/sources.list.d/grafana.list
+    line: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com beta main"
+    create: yes
+  when: os_debian
+- name: add Grafana beta repository to sources.list
+  lineinfile:
+    path: /etc/apt/sources.list.d/grafana.list
+    line: "deb [signed-by=/etc/apt/keyrings/grafana.gpg] https://apt.grafana.com beta main"
+    create: yes
+  when: os_debian
+- name: Update apt cache
+  apt:
+    update_cache: yes
+  when: os_debian
+- name: Install Grafana Debian
+  apt:
+    name: grafana
+    state: present
+  when: os_debian
+- name: service start
+  service:
+    name: grafana-server
+    state: started
+  when: os_debian
+- name: grafana repo file copy
+  copy:
+    src: grafana.repo
+    dest: /etc/yum.repos.d/grafana.repo
+  when: os_redhat
+
+- name: Install Grafana 
+  dnf:
+    name: grafana
+    state: present
+  when: os_redhat
+- name: Start Service
+  service:
+    name: grafana-server
+    state: started
+  when: os_redhat

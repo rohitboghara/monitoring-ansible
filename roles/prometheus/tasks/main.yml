@@ -1,0 +1,60 @@
+---
+- name: Create user prometheus
+  user:
+    name: prometheus
+    state: present
+    shell: /bin/false
+    createhome: no
+- name: Create file prometheus
+  file:
+    path: /etc/prometheus
+    state: directory
+- name: prometheus tar file download
+  get_url: 
+    url: https://github.com/prometheus/prometheus/releases/download/v3.0.0/prometheus-3.0.0.linux-amd64.tar.gz
+    dest: /tmp/prometheus-3.0.0.linux-amd64.tar.gz
+    mode: '0644'
+- name: Create the Directory
+  file:
+    path: /var/lib/prometheus
+    state: directory
+    owner: prometheus
+    group: prometheus
+    mode: '0775'
+
+- name: Extract archive
+  unarchive:
+    src: /tmp/prometheus-3.0.0.linux-amd64.tar.gz
+    dest: /opt/
+    remote_src: yes
+
+- name: Copy prometheus and promtool to /usr/local/bin/
+  command:
+    cmd: mv /opt/prometheus-3.0.0.linux-amd64/prometheus /usr/local/bin/prometheus
+  
+- name: Copy prometheus and promtool to /usr/local/bin
+  command:
+    cmd: mv /opt/prometheus-3.0.0.linux-amd64/promtool /usr/local/bin/promtool
+- name: Service file copy
+  copy:
+    src: prometheus.service
+    dest: /etc/systemd/system/prometheus.service
+    mode: '0644'
+    owner: root
+    group: root
+- name: copy prometheus.yml file
+  copy:
+    src: prometheus.yml
+    dest: /etc/prometheus/prometheus.yml
+
+- name: Reload systemd 
+  systemd:
+    daemon_reload: yes
+- name: Start Prometheus
+  systemd:
+    name: prometheus.service
+    state: started
+- name: Restart Service
+  service:
+    name: prometheus.service
+    state: restarted
